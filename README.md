@@ -14,6 +14,27 @@ TxPlug is a plugin‑first wallet transaction aggregator. The server loads chain
 - The server watches plugins.json and reloads the runtime when it changes.
 - Plugins load from remoteEntry URLs (Module Federation), which lets them be deployed on their own.
 
+## Architecture
+
+```mermaid
+flowchart TB
+   User[Client / UI] -->|HTTP| Server[Fastify Server]
+   Server -->|reads + watches| Registry[plugins.json]
+   Server --> Runtime[every-plugin runtime]
+   Runtime -->|Module Federation| Remote[remoteEntry.js]
+   Runtime --> Plugin[Chain Plugin]
+   Plugin --> Service[Service Adapter]
+   Service --> Provider[Chain API / RPC]
+
+   subgraph Plugin Node
+      Plugin --> Contract[oRPC contract]
+      Plugin --> Service
+   end
+
+   Registry --> Security[allowlist + checksum]
+   Security --> Runtime
+```
+
 ## Project layout
 
 - plugins/: Chain plugins (each follows the every‑plugin structure).
