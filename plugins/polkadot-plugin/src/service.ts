@@ -31,15 +31,42 @@ interface SubscanResponse {
   };
 }
 
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+};
+
 export class PolkadotService {
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private maxCacheEntries = 500;
+
   constructor(
     private apiKey: string | undefined,
     private network: "polkadot" | "moonbeam",
     private name: string,
     private symbol: string,
     private explorer: string,
-    private baseUrl: string
+    private baseUrl: string,
+    private cacheTtlMs = 30_000
   ) {}
+
+  private getCache<T>(key: string): T | undefined {
+    const entry = this.cache.get(key) as CacheEntry<T> | undefined;
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+
+  private setCache<T>(key: string, value: T) {
+    if (this.cache.size >= this.maxCacheEntries) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, { value, expiresAt: Date.now() + this.cacheTtlMs });
+  }
 
   private getApiUrl() {
     if (this.baseUrl) {
@@ -51,6 +78,12 @@ export class PolkadotService {
   getTransactions(address: string, limit = 50, offset = 0) {
     return Effect.tryPromise({
       try: async () => {
+        const cacheKey = `tx:${address}:${limit}:${offset}`;
+        const cached = this.getCache<{ transactions: Transaction[]; total: number }>(cacheKey);
+        if (cached) {
+          return cached;
+        }
+
         const pageSize = Math.max(1, Math.min(100, limit));
         const page = Math.floor(offset / pageSize);
         const url = `${this.getApiUrl()}/api/scan/transfers`;
@@ -91,21 +124,30 @@ export class PolkadotService {
           status: tx.success ? "success" : "failed"
         }));
 
-        return {
+        const result = {
           transactions,
           total: payload.data?.count ?? transactions.length
         };
+        this.setCache(cacheKey, result);
+        return result;
       },
       catch: (error) => new Error(`Failed to get transactions: ${error}`)
     });
   }
 
   getChainInfo() {
-    return Effect.succeed({
+    const cacheKey = "chainInfo";
+    const cached = this.getCache<{ chainId: number; name: string; symbol: string; explorer: string }>(cacheKey);
+    if (cached) {
+      return Effect.succeed(cached);
+    }
+    const info = {
       chainId: this.network === "moonbeam" ? 1284 : 0,
       name: this.name,
       symbol: this.symbol,
       explorer: this.explorer
-    });
+    };
+    this.setCache(cacheKey, info);
+    return Effect.succeed(info);
   }
 }

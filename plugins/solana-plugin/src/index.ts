@@ -11,7 +11,8 @@ export default createPlugin({
     rpcUrl: z.string().optional(),
     name: z.string().optional(),
     symbol: z.string().optional(),
-    explorer: z.string().optional()
+    explorer: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -30,7 +31,8 @@ export default createPlugin({
         rpcUrl ?? "",
         config.variables.name ?? "Solana Mainnet",
         config.variables.symbol ?? "SOL",
-        config.variables.explorer ?? "https://explorer.solana.com"
+        config.variables.explorer ?? "https://explorer.solana.com",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

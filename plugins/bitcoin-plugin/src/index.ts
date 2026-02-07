@@ -11,7 +11,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({}),
@@ -22,7 +23,8 @@ export default createPlugin({
         config.variables.name ?? "Bitcoin",
         config.variables.symbol ?? "BTC",
         config.variables.explorer ?? "https://blockstream.info",
-        config.variables.baseUrl ?? "https://blockstream.info/api"
+        config.variables.baseUrl ?? "https://blockstream.info/api",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

@@ -14,7 +14,8 @@ export default createPlugin({
     explorer: z.string().optional(),
     baseUrl: z.string().optional(),
     provider: z.enum(["covalent", "alchemy"]).optional(),
-    alchemyUrl: z.string().optional()
+    alchemyUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
   
   secrets: z.object({ 
@@ -30,7 +31,8 @@ export default createPlugin({
       config.variables.explorer ?? "https://etherscan.io",
       config.variables.baseUrl ?? "https://api.covalenthq.com",
       config.variables.provider ?? "covalent",
-      config.variables.alchemyUrl
+      config.variables.alchemyUrl,
+      config.variables.cacheTtlMs ?? 30_000
     );
     return { service };
   }),

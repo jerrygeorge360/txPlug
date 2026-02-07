@@ -9,7 +9,8 @@
       "apiKey": ""
     },
     "variables": {
-      "baseUrl": "https://api.example.com"
+      "baseUrl": "https://api.example.com",
+      "cacheTtlMs": 30000
     }
   }
 }

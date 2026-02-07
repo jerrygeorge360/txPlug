@@ -31,6 +31,11 @@ interface CovalentResponse {
   };
 }
 
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+};
+
 interface AlchemyTransfer {
   hash: string;
   from: string;
@@ -49,6 +54,9 @@ interface AlchemyResponse {
 }
 
 export class EthereumService {
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private maxCacheEntries = 500;
+
   constructor(
     private apiKey: string,
     private chainId: number,
@@ -57,16 +65,41 @@ export class EthereumService {
     private explorer: string,
     private baseUrl: string,
     private provider: "covalent" | "alchemy",
-    private alchemyUrl?: string
+    private alchemyUrl?: string,
+    private cacheTtlMs = 30_000
   ) {
     if (!apiKey) {
       throw new Error("API key is required");
     }
   }
 
+  private getCache<T>(key: string): T | undefined {
+    const entry = this.cache.get(key) as CacheEntry<T> | undefined;
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+
+  private setCache<T>(key: string, value: T) {
+    if (this.cache.size >= this.maxCacheEntries) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, { value, expiresAt: Date.now() + this.cacheTtlMs });
+  }
+
   getTransactions(address: string, limit = 50, offset = 0) {
     return Effect.tryPromise({
       try: async () => {
+        const cacheKey = `tx:${address}:${limit}:${offset}`;
+        const cached = this.getCache<{ transactions: Transaction[]; total: number }>(cacheKey);
+        if (cached) {
+          return cached;
+        }
+
         const pageSize = Math.max(1, Math.min(100, limit));
 
         if (this.provider === "alchemy") {
@@ -121,10 +154,12 @@ export class EthereumService {
             status: "success"
           }));
 
-          return {
+          const result = {
             transactions,
             total: transactions.length
           };
+          this.setCache(cacheKey, result);
+          return result;
         }
 
         const pageNumber = Math.floor(offset / pageSize) + 1;
@@ -153,21 +188,30 @@ export class EthereumService {
           status: tx.successful === null ? "pending" : tx.successful ? "success" : "failed"
         }));
 
-        return {
+        const result = {
           transactions,
           total: payload.data?.pagination?.total_count ?? transactions.length
         };
+        this.setCache(cacheKey, result);
+        return result;
       },
       catch: (error) => new Error(`Failed to get transactions: ${error}`)
     });
   }
 
   getChainInfo() {
-    return Effect.succeed({
+    const cacheKey = "chainInfo";
+    const cached = this.getCache<{ chainId: number; name: string; symbol: string; explorer: string }>(cacheKey);
+    if (cached) {
+      return Effect.succeed(cached);
+    }
+    const info = {
       chainId: this.chainId,
       name: this.name,
       symbol: this.symbol,
       explorer: this.explorer
-    });
+    };
+    this.setCache(cacheKey, info);
+    return Effect.succeed(info);
   }
 }

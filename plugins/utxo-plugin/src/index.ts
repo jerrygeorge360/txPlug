@@ -12,7 +12,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -27,7 +28,8 @@ export default createPlugin({
         config.variables.name ?? "Bitcoin",
         config.variables.symbol ?? "BTC",
         config.variables.explorer ?? "https://blockchair.com/bitcoin",
-        config.variables.baseUrl ?? "https://api.blockchair.com"
+        config.variables.baseUrl ?? "https://api.blockchair.com",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

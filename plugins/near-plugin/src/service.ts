@@ -31,6 +31,11 @@ interface CovalentResponse {
   };
 }
 
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+};
+
 interface NearblocksResponse {
   txns?: Array<{
     transaction_hash: string;
@@ -45,6 +50,9 @@ interface NearblocksResponse {
 }
 
 export class NearService {
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private maxCacheEntries = 500;
+
   constructor(
     private provider: "nearblocks" | "covalent",
     private name: string,
@@ -53,12 +61,37 @@ export class NearService {
     private baseUrl: string,
     private apiKey?: string,
     private covalentBaseUrl?: string,
-    private covalentChain?: string
+    private covalentChain?: string,
+    private cacheTtlMs = 30_000
   ) {}
+
+  private getCache<T>(key: string): T | undefined {
+    const entry = this.cache.get(key) as CacheEntry<T> | undefined;
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+
+  private setCache<T>(key: string, value: T) {
+    if (this.cache.size >= this.maxCacheEntries) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, { value, expiresAt: Date.now() + this.cacheTtlMs });
+  }
 
   getTransactions(address: string, limit = 50, offset = 0) {
     return Effect.tryPromise({
       try: async () => {
+        const cacheKey = `tx:${address}:${limit}:${offset}`;
+        const cached = this.getCache<{ transactions: Transaction[]; total: number }>(cacheKey);
+        if (cached) {
+          return cached;
+        }
+
         if (this.provider === "covalent") {
           if (!this.apiKey) {
             throw new Error("Covalent API key is required");
@@ -88,10 +121,12 @@ export class NearService {
             status: tx.successful === null ? "pending" : tx.successful ? "success" : "failed"
           }));
 
-          return {
+          const result = {
             transactions,
             total: covalentPayload.data?.pagination?.total_count ?? transactions.length
           };
+          this.setCache(cacheKey, result);
+          return result;
         }
 
         const url = `${this.baseUrl}/v1/account/${address}/txns?limit=${limit}&offset=${offset}`;
@@ -113,21 +148,30 @@ export class NearService {
           status: tx.status?.toLowerCase() === "success" ? "success" : "failed"
         }));
 
-        return {
+        const result = {
           transactions,
           total: payload.total ?? transactions.length
         };
+        this.setCache(cacheKey, result);
+        return result;
       },
       catch: (error) => new Error(`Failed to get transactions: ${error}`)
     });
   }
 
   getChainInfo() {
-    return Effect.succeed({
+    const cacheKey = "chainInfo";
+    const cached = this.getCache<{ chainId: number; name: string; symbol: string; explorer: string }>(cacheKey);
+    if (cached) {
+      return Effect.succeed(cached);
+    }
+    const info = {
       chainId: 0,
       name: this.name,
       symbol: this.symbol,
       explorer: this.explorer
-    });
+    };
+    this.setCache(cacheKey, info);
+    return Effect.succeed(info);
   }
 }

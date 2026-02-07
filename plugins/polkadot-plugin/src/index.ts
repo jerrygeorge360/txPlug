@@ -12,7 +12,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -31,7 +32,8 @@ export default createPlugin({
           (network === "moonbeam"
             ? "https://moonbeam.subscan.io"
             : "https://polkadot.subscan.io"),
-        config.variables.baseUrl ?? `https://${network}.api.subscan.io`
+        config.variables.baseUrl ?? `https://${network}.api.subscan.io`,
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

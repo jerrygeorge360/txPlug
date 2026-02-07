@@ -11,7 +11,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({}),
@@ -22,7 +23,8 @@ export default createPlugin({
         config.variables.name ?? "Aptos",
         config.variables.symbol ?? "APT",
         config.variables.explorer ?? "https://explorer.aptoslabs.com",
-        config.variables.baseUrl ?? "https://api.mainnet.aptoslabs.com/v1"
+        config.variables.baseUrl ?? "https://api.mainnet.aptoslabs.com/v1",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

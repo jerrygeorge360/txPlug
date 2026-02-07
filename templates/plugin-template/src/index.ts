@@ -11,7 +11,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -20,7 +21,10 @@ export default createPlugin({
 
   initialize: (config) =>
     Effect.gen(function* () {
-      const service = new ChainService(config.variables.baseUrl ?? "https://api.example.com");
+      const service = new ChainService(
+        config.variables.baseUrl ?? "https://api.example.com",
+        config.variables.cacheTtlMs ?? 30_000
+      );
       return { service };
     }),
 

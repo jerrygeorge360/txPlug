@@ -14,7 +14,8 @@ export default createPlugin({
     explorer: z.string().optional(),
     baseUrl: z.string().optional(),
     covalentBaseUrl: z.string().optional(),
-    covalentChain: z.string().optional()
+    covalentChain: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -31,7 +32,8 @@ export default createPlugin({
         config.variables.baseUrl ?? "https://api.nearblocks.io",
         config.secrets.apiKey,
         config.variables.covalentBaseUrl,
-        config.variables.covalentChain
+        config.variables.covalentChain,
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

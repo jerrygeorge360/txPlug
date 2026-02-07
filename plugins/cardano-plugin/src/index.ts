@@ -11,7 +11,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -25,7 +26,8 @@ export default createPlugin({
         config.variables.name ?? "Cardano",
         config.variables.symbol ?? "ADA",
         config.variables.explorer ?? "https://cardanoscan.io",
-        config.variables.baseUrl ?? "https://cardano-mainnet.blockfrost.io/api/v0"
+        config.variables.baseUrl ?? "https://cardano-mainnet.blockfrost.io/api/v0",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

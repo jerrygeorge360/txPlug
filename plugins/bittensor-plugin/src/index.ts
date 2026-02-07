@@ -11,7 +11,8 @@ export default createPlugin({
     rpcUrl: z.string().optional(),
     name: z.string().optional(),
     symbol: z.string().optional(),
-    explorer: z.string().optional()
+    explorer: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({}),
@@ -22,7 +23,8 @@ export default createPlugin({
         config.variables.rpcUrl ?? "https://archive.chain.opentensor.ai",
         config.variables.name ?? "Bittensor",
         config.variables.symbol ?? "TAO",
-        config.variables.explorer ?? "https://taostats.io"
+        config.variables.explorer ?? "https://taostats.io",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };

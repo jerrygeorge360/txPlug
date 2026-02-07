@@ -11,7 +11,8 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional()
+    baseUrl: z.string().optional(),
+    cacheTtlMs: z.number().optional()
   }),
 
   secrets: z.object({
@@ -25,7 +26,8 @@ export default createPlugin({
         config.variables.name ?? "Tron",
         config.variables.symbol ?? "TRX",
         config.variables.explorer ?? "https://tronscan.org",
-        config.variables.baseUrl ?? "https://api.trongrid.io"
+        config.variables.baseUrl ?? "https://api.trongrid.io",
+        config.variables.cacheTtlMs ?? 30_000
       );
 
       return { service };
