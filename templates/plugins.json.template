@@ -1,0 +1,15 @@
+{
+  "chain-id": {
+    "enabled": true,
+    "remote": "http://localhost:3031/remoteEntry.js",
+    "name": "Chain Name",
+    "symbol": "SYM",
+    "explorer": "https://explorer.example.com",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "baseUrl": "https://api.example.com"
+    }
+  }
+}

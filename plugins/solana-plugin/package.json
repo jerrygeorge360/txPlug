@@ -1,0 +1,18 @@
+{
+  "name": "solana-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "rspack serve -c rspack.config.cjs",
+    "build": "rspack build -c rspack.config.cjs"
+  },
+  "dependencies": {
+    "every-plugin": "latest"
+  },
+  "devDependencies": {
+    "@rspack/cli": "latest",
+    "@rspack/core": "latest",
+    "zephyr-rspack-plugin": "latest"
+  }
+}

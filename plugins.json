@@ -1,0 +1,198 @@
+{
+  "allowlist": [
+    "localhost:3014",
+    "localhost:3020",
+    "localhost:3021",
+    "localhost:3022",
+    "localhost:3023",
+    "localhost:3024",
+    "localhost:3025",
+    "localhost:3026",
+    "localhost:3027",
+    "localhost:3028",
+    "localhost:3029",
+    "localhost:3030"
+  ],
+  "requireChecksum": false,
+  "evm": {
+    "enabled": true,
+    "remote": "http://localhost:3014/remoteEntry.js",
+    "checksum": "",
+    "name": "Ethereum Mainnet",
+    "symbol": "ETH",
+    "explorer": "https://etherscan.io",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "provider": "covalent",
+      "chainId": 1,
+      "baseUrl": "https://api.covalenthq.com",
+      "alchemyUrl": ""
+    }
+  },
+  "solana": {
+    "enabled": true,
+    "remote": "http://localhost:3020/remoteEntry.js",
+    "checksum": "",
+    "name": "Solana Mainnet",
+    "symbol": "SOL",
+    "explorer": "https://explorer.solana.com",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "rpcUrl": ""
+    }
+  },
+  "polkadot": {
+    "enabled": true,
+    "remote": "http://localhost:3021/remoteEntry.js",
+    "checksum": "",
+    "name": "Polkadot",
+    "symbol": "DOT",
+    "explorer": "https://polkadot.subscan.io",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "network": "polkadot",
+      "baseUrl": "https://polkadot.api.subscan.io"
+    }
+  },
+  "moonbeam": {
+    "enabled": false,
+    "remote": "http://localhost:3021/remoteEntry.js",
+    "checksum": "",
+    "name": "Moonbeam",
+    "symbol": "GLMR",
+    "explorer": "https://moonbeam.subscan.io",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "network": "moonbeam",
+      "baseUrl": "https://moonbeam.api.subscan.io"
+    }
+  },
+  "bitcoin": {
+    "enabled": true,
+    "remote": "http://localhost:3022/remoteEntry.js",
+    "checksum": "",
+    "name": "Bitcoin",
+    "symbol": "BTC",
+    "explorer": "https://blockstream.info",
+    "secrets": {},
+    "variables": {
+      "baseUrl": "https://blockstream.info/api"
+    }
+  },
+  "utxo": {
+    "enabled": true,
+    "remote": "http://localhost:3023/remoteEntry.js",
+    "checksum": "",
+    "name": "Bitcoin (Blockchair)",
+    "symbol": "BTC",
+    "explorer": "https://blockchair.com/bitcoin",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "chain": "bitcoin",
+      "baseUrl": "https://api.blockchair.com"
+    }
+  },
+  "cardano": {
+    "enabled": true,
+    "remote": "http://localhost:3024/remoteEntry.js",
+    "checksum": "",
+    "name": "Cardano",
+    "symbol": "ADA",
+    "explorer": "https://cardanoscan.io",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "baseUrl": "https://cardano-mainnet.blockfrost.io/api/v0"
+    }
+  },
+  "near": {
+    "enabled": true,
+    "remote": "http://localhost:3025/remoteEntry.js",
+    "checksum": "",
+    "name": "NEAR",
+    "symbol": "NEAR",
+    "explorer": "https://nearblocks.io",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "provider": "nearblocks",
+      "baseUrl": "https://api.nearblocks.io",
+      "covalentBaseUrl": "https://api.covalenthq.com",
+      "covalentChain": "near-mainnet"
+    }
+  },
+  "aptos": {
+    "enabled": true,
+    "remote": "http://localhost:3026/remoteEntry.js",
+    "checksum": "",
+    "name": "Aptos",
+    "symbol": "APT",
+    "explorer": "https://explorer.aptoslabs.com",
+    "secrets": {},
+    "variables": {
+      "baseUrl": "https://api.mainnet.aptoslabs.com/v1"
+    }
+  },
+  "sui": {
+    "enabled": true,
+    "remote": "http://localhost:3027/remoteEntry.js",
+    "checksum": "",
+    "name": "Sui",
+    "symbol": "SUI",
+    "explorer": "https://suiexplorer.com",
+    "secrets": {},
+    "variables": {
+      "rpcUrl": "https://api.mainnet.sui.io"
+    }
+  },
+  "tezos": {
+    "enabled": true,
+    "remote": "http://localhost:3028/remoteEntry.js",
+    "checksum": "",
+    "name": "Tezos",
+    "symbol": "XTZ",
+    "explorer": "https://tzkt.io",
+    "secrets": {},
+    "variables": {
+      "baseUrl": "https://api.tzkt.io/v1"
+    }
+  },
+  "tron": {
+    "enabled": true,
+    "remote": "http://localhost:3029/remoteEntry.js",
+    "checksum": "",
+    "name": "Tron",
+    "symbol": "TRX",
+    "explorer": "https://tronscan.org",
+    "secrets": {
+      "apiKey": ""
+    },
+    "variables": {
+      "baseUrl": "https://api.trongrid.io"
+    }
+  },
+  "bittensor": {
+    "enabled": true,
+    "remote": "http://localhost:3030/remoteEntry.js",
+    "checksum": "",
+    "name": "Bittensor",
+    "symbol": "TAO",
+    "explorer": "https://taostats.io",
+    "secrets": {},
+    "variables": {
+      "rpcUrl": "https://archive.chain.opentensor.ai"
+    }
+  }
+}
