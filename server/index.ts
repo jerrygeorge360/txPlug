@@ -18,10 +18,10 @@ let pluginClients = new Map();
 let pluginConfigs: any = {};
 let allowlist: string[] = [];
 let requireChecksum = false;
-const pluginStatus = new Map<
-  string,
-  { status: 'loaded' | 'failed' | 'skipped'; reason?: string; checkedAt: number }
->();
+
+type PluginStatusType = { status: 'loaded' | 'failed' | 'skipped'; reason?: string; checkedAt: number }
+
+const pluginStatus = new Map<string,PluginStatusType>();
 
 const pluginsPath = resolve(process.cwd(), 'plugins.json');
 
@@ -38,7 +38,7 @@ async function loadPluginConfig() {
 
 // Initialize/reload plugins
 async function reloadPlugins() {
-  console.log('🔄 Loading plugins...');
+  console.log('Loading plugins...');
   
   pluginConfigs = await loadPluginConfig();
   allowlist = Array.isArray(pluginConfigs.allowlist) ? pluginConfigs.allowlist : [];
@@ -119,7 +119,7 @@ async function reloadPlugins() {
   // Create new runtime
   runtime = createPluginRuntime({ registry, secrets });
   
-  console.log(`✅ Loaded ${enabledPlugins.length} plugins:`, Object.keys(registry));
+  console.log(`Loaded ${enabledPlugins.length} plugins:`, Object.keys(registry));
 }
 
 // Get or create plugin client
@@ -145,20 +145,20 @@ async function getPluginClient(chain: string) {
     const client = createClient();
     pluginClients.set(chain, client);
     
-    console.log(`✅ Initialized plugin: ${chain}`);
+    console.log(`Initialized plugin: ${chain}`);
   }
   
   return pluginClients.get(chain);
 }
 
 // Watch for changes (debounced)
-let reloadTimer: NodeJS.Timeout | null = null;
+let reloadTimer: NodeJS.Timeout | null = null; // the ref that setTimeOut woould return to be used for clearing the scheduled task
 const scheduleReload = () => {
   if (reloadTimer) {
     clearTimeout(reloadTimer);
   }
   reloadTimer = setTimeout(async () => {
-    console.log('📝 plugins.json changed, reloading...');
+    console.log('plugins.json changed, reloading...');
     try {
       await reloadPlugins();
     } catch (error) {
@@ -180,7 +180,7 @@ fastify.get('/health', async () => {
     plugins: Object.keys(pluginConfigs).filter((id) => id !== 'allowlist' && id !== 'requireChecksum').length,
     allowlist,
     requireChecksum,
-    statuses: Object.fromEntries(pluginStatus.entries())
+    statuses: Object.fromEntries(pluginStatus.entries()) // converts the Map objects to normal objects.
   };
 });
 
@@ -267,8 +267,8 @@ await reloadPlugins();
 const start = async () => {
   try {
     await fastify.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('🚀 Server running at http://localhost:3000');
-    console.log('📋 Available chains:', Object.keys(pluginConfigs).filter(k => pluginConfigs[k].enabled));
+    console.log('Server running at http://localhost:3000');
+    console.log('Available chains:', Object.keys(pluginConfigs).filter(k => pluginConfigs[k].enabled));
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -289,3 +289,5 @@ process.once('SIGINT', shutdown);
 process.once('SIGTERM', shutdown);
 
 start();
+// seems like reloadPlugins and getPlugins are contradicting
+// how would the secrets really be managed? should I make it so that consumers manage their own api keys

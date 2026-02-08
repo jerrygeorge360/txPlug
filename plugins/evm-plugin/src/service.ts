@@ -11,45 +11,33 @@ interface Transaction {
   status: "success" | "failed" | "pending";
 }
 
-interface CovalentTransaction {
-  tx_hash: string;
-  from_address: string;
-  to_address: string | null;
-  value: string;
-  block_signed_at: string;
-  block_height: number;
-  fees: string | null;
-  successful: boolean | null;
-}
-
-interface CovalentResponse {
-  data: {
-    items: CovalentTransaction[];
-    pagination?: {
-      total_count?: number;
-    };
-  };
-}
-
 type CacheEntry<T> = {
   value: T;
   expiresAt: number;
 };
 
 interface AlchemyTransfer {
+  uniqueId?: string;
   hash: string;
   from: string;
   to: string | null;
-  value: number | string;
+  value: number | string | null;
   blockNum: string;
+  category?: string;
+  rawContract?: {
+    value?: string | null;
+    decimal?: string | null;
+  };
   metadata?: {
-    blockTimestamp?: string;
+    blockTimestamp?: string | null;
   };
 }
+
 
 interface AlchemyResponse {
   result?: {
     transfers?: AlchemyTransfer[];
+    pageKey?: string;
   };
 }
 
@@ -63,13 +51,14 @@ export class EthereumService {
     private name: string,
     private symbol: string,
     private explorer: string,
-    private baseUrl: string,
-    private provider: "covalent" | "alchemy",
-    private alchemyUrl?: string,
+    private alchemyUrl: string,
     private cacheTtlMs = 30_000
   ) {
     if (!apiKey) {
       throw new Error("API key is required");
+    }
+    if (!alchemyUrl) {
+      throw new Error("Alchemy URL is required");
     }
   }
 
@@ -101,12 +90,11 @@ export class EthereumService {
         }
 
         const pageSize = Math.max(1, Math.min(100, limit));
+        const alchemyUrl = this.alchemyUrl;
 
-        if (this.provider === "alchemy") {
-          if (!this.alchemyUrl) {
-            throw new Error("Alchemy URL is required when provider=alchemy");
-          }
+        const maxCount = Math.max(1, Math.min(1000, limit + offset));
 
+        const fetchTransfers = async (direction: "to" | "from") => {
           const body = {
             id: 1,
             jsonrpc: "2.0",
@@ -115,17 +103,16 @@ export class EthereumService {
               {
                 fromBlock: "0x0",
                 toBlock: "latest",
-                toAddress: address,
-                fromAddress: address,
+                ...(direction === "to" ? { toAddress: address } : { fromAddress: address }),
                 withMetadata: true,
                 excludeZeroValue: true,
-                maxCount: `0x${pageSize.toString(16)}`,
-                category: ["external", "internal", "erc20", "erc721", "erc1155"]
+                maxCount: `0x${maxCount.toString(16)}`,
+                category: ["external", "internal", "erc20", "erc721", "erc1155", "specialnft"]
               }
             ]
           };
 
-          const response = await fetch(this.alchemyUrl, {
+          const response = await fetch(alchemyUrl, {
             method: "POST",
             headers: {
               Accept: "application/json",
@@ -139,58 +126,61 @@ export class EthereumService {
           }
 
           const payload = (await response.json()) as AlchemyResponse;
-          const transfers = payload.result?.transfers ?? [];
+          return payload.result?.transfers ?? [];
+        };
 
-          const transactions: Transaction[] = transfers.map((tx) => ({
+        const [toTransfers, fromTransfers] = await Promise.all([
+          fetchTransfers("to"),
+          fetchTransfers("from")
+        ]);
+
+        const merged = [...toTransfers, ...fromTransfers];
+        const deduped = Array.from(
+          new Map(
+            merged.map((tx) => [
+              tx.uniqueId ?? `${tx.hash}-${tx.blockNum}-${tx.from}-${tx.to}-${tx.category ?? ""}-${tx.rawContract?.value ?? ""}`,
+              tx
+            ])
+          ).values()
+        );
+
+        const sliced = deduped.slice(offset, offset + pageSize);
+
+        const transactions: Transaction[] = sliced.map((tx) => {
+          const rawValue = tx.rawContract?.value ?? null;
+          const rawDecimal = tx.rawContract?.decimal ?? null;
+          let normalizedValue: string = `${tx.value ?? "0"}`;
+
+          if (rawValue && rawDecimal) {
+            const decimal = rawDecimal.startsWith("0x")
+              ? Number.parseInt(rawDecimal, 16)
+              : Number.parseInt(rawDecimal, 10);
+            const valueBig = BigInt(rawValue);
+            const divisor = BigInt(10) ** BigInt(decimal);
+            const whole = valueBig / divisor;
+            const fraction = valueBig % divisor;
+            normalizedValue = fraction === 0n
+              ? `${whole}`
+              : `${whole}.${fraction.toString().padStart(decimal, "0")}`;
+          }
+
+          return {
             hash: tx.hash,
             from: tx.from,
             to: tx.to ?? null,
-            value: `${tx.value ?? "0"}`,
+            value: normalizedValue,
             timestamp: tx.metadata?.blockTimestamp
               ? Math.floor(new Date(tx.metadata.blockTimestamp).getTime() / 1000)
               : 0,
             blockNumber: parseInt(tx.blockNum, 16),
             fee: "0",
             status: "success"
-          }));
-
-          const result = {
-            transactions,
-            total: transactions.length
           };
-          this.setCache(cacheKey, result);
-          return result;
-        }
-
-        const pageNumber = Math.floor(offset / pageSize) + 1;
-        const url = new URL(
-          `${this.baseUrl}/v1/${this.chainId}/address/${address}/transactions_v2/`
-        );
-        url.searchParams.set("key", this.apiKey);
-        url.searchParams.set("page-number", String(pageNumber));
-        url.searchParams.set("page-size", String(pageSize));
-
-        const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error(`Covalent API error: ${response.status}`);
-        }
-        const payload = (await response.json()) as CovalentResponse;
-        const items = payload.data?.items ?? [];
-
-        const transactions: Transaction[] = items.map((tx) => ({
-          hash: tx.tx_hash,
-          from: tx.from_address,
-          to: tx.to_address,
-          value: tx.value ?? "0",
-          timestamp: Math.floor(new Date(tx.block_signed_at).getTime() / 1000),
-          blockNumber: tx.block_height,
-          fee: tx.fees ?? "0",
-          status: tx.successful === null ? "pending" : tx.successful ? "success" : "failed"
-        }));
+        });
 
         const result = {
           transactions,
-          total: payload.data?.pagination?.total_count ?? transactions.length
+          total: deduped.length
         };
         this.setCache(cacheKey, result);
         return result;
@@ -215,3 +205,5 @@ export class EthereumService {
     return Effect.succeed(info);
   }
 }
+
+

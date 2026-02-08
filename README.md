@@ -118,7 +118,7 @@ You can also replace the remote URL with a CDN deployment in production.
 
 ## Notes and caveats
 
-- Some APIs require keys (Blockfrost, Subscan, Covalent, Helius, TronGrid).
+- Some APIs require keys (Alchemy, Blockfrost, Subscan, Helius, TronGrid).
 - Bittensor RPC doesn’t expose account history without indexing; the plugin is a placeholder until an indexer is wired in.
 - Some plugins return simplified values where providers don’t expose exact fields (e.g., fees or to‑address for UTXO chains).
 

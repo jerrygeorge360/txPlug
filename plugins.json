@@ -25,10 +25,9 @@
       "apiKey": ""
     },
     "variables": {
-      "provider": "covalent",
       "chainId": 1,
-      "baseUrl": "https://api.covalenthq.com",
-      "alchemyUrl": ""
+      "alchemyUrl": "",
+      "cacheTtlMs": 30000
     }
   },
   "solana": {

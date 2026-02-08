@@ -12,8 +12,6 @@ export default createPlugin({
     name: z.string().optional(),
     symbol: z.string().optional(),
     explorer: z.string().optional(),
-    baseUrl: z.string().optional(),
-    provider: z.enum(["covalent", "alchemy"]).optional(),
     alchemyUrl: z.string().optional(),
     cacheTtlMs: z.number().optional()
   }),
@@ -23,15 +21,16 @@ export default createPlugin({
   }),
   
   initialize: (config) => Effect.gen(function* () {
+    const alchemyUrl = config.variables.alchemyUrl
+      ?? `https://eth-mainnet.g.alchemy.com/v2/${config.secrets.apiKey}`;
+
     const service = new EthereumService(
       config.secrets.apiKey,
       config.variables.chainId ?? 1,
       config.variables.name ?? "Ethereum Mainnet",
       config.variables.symbol ?? "ETH",
       config.variables.explorer ?? "https://etherscan.io",
-      config.variables.baseUrl ?? "https://api.covalenthq.com",
-      config.variables.provider ?? "covalent",
-      config.variables.alchemyUrl,
+      alchemyUrl,
       config.variables.cacheTtlMs ?? 30_000
     );
     return { service };
