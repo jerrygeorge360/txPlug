@@ -8,7 +8,7 @@
     "build": "rspack build -c rspack.config.cjs"
   },
   "dependencies": {
-    "every-plugin": "latest"
+    "every-plugin": "^0.9.0"
   },
   "devDependencies": {
     "@rspack/cli": "latest",

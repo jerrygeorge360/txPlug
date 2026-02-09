@@ -2,7 +2,8 @@ import Fastify from 'fastify';
 import { watch } from 'fs';
 import { readFile } from 'fs/promises';
 import { createHash } from 'node:crypto';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { createPluginRuntime } from 'every-plugin/runtime';
 import cors from '@fastify/cors';
 
@@ -23,7 +24,8 @@ type PluginStatusType = { status: 'loaded' | 'failed' | 'skipped'; reason?: stri
 
 const pluginStatus = new Map<string,PluginStatusType>();
 
-const pluginsPath = resolve(process.cwd(), 'plugins.json');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pluginsPath = resolve(__dirname, '..', 'plugins.json');
 
 // Load plugins from JSON
 async function loadPluginConfig() {
@@ -134,7 +136,7 @@ async function getPluginClient(chain: string) {
     // Build secrets mapping
     const secretsMap: any = {};
     for (const [key, _] of Object.entries(config.secrets || {})) {
-      secretsMap[key.toLowerCase()] = `{{${chain.toUpperCase()}_${key}}}`;
+      secretsMap[key] = `{{${chain.toUpperCase()}_${key}}}`;
     }
     
     const { createClient } = await runtime.usePlugin(chain, {
@@ -225,7 +227,9 @@ fastify.get('/api/:chain/info', async (request, reply) => {
   const { chain } = request.params as { chain: string };
   
   try {
+    console.log(`getting client for chains:`, chain);
     const client = await getPluginClient(chain);
+    console.log(`client message is this:`, client);
     const info = await client.getChainInfo({});
     return info;
   } catch (error: any) {

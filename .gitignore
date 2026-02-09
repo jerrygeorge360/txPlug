@@ -16,3 +16,5 @@ plugins/**/.zephyr/
 
 templates/**/node_modules/
 templates/**/dist/
+
+plugins.json

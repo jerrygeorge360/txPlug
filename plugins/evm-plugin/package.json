@@ -1,5 +1,5 @@
 {
-  "name": "ethereum-plugin",
+  "name": "evm",
   "version": "1.0.0",
   "type": "module",
   "main": "./src/index.ts",
@@ -8,7 +8,8 @@
     "build": "rspack build -c rspack.config.cjs"
   },
   "dependencies": {
-    "every-plugin": "latest"
+    "every-plugin": "^0.9.0",
+    "viem": "^2.31.0"
   },
   "devDependencies": {
     "@rspack/cli": "latest",

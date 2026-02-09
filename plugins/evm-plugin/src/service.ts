@@ -1,4 +1,5 @@
 import { Effect } from "every-plugin/effect";
+import { formatUnits } from "viem";
 
 interface Transaction {
   hash: string;
@@ -80,19 +81,48 @@ export class EthereumService {
     this.cache.set(key, { value, expiresAt: Date.now() + this.cacheTtlMs });
   }
 
+  private toNumber(value: unknown): number | null {
+    if (typeof value === "number") return value;
+    if (typeof value === "bigint") return Number(value);
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) return parsed;
+      const dateParsed = Date.parse(value);
+      return Number.isNaN(dateParsed) ? null : dateParsed;
+    }
+    return null;
+  }
+
+  private toHexNumber(value: unknown): number | null {
+    if (typeof value === "bigint") return Number(value);
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
+        return Number.parseInt(trimmed, 16);
+      }
+      const parsed = Number(trimmed);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    return null;
+  }
+
+
   getTransactions(address: string, limit = 50, offset = 0) {
     return Effect.tryPromise({
       try: async () => {
+        const safeLimit = this.toNumber(limit) ?? 50;
+        const safeOffset = this.toNumber(offset) ?? 0;
         const cacheKey = `tx:${address}:${limit}:${offset}`;
         const cached = this.getCache<{ transactions: Transaction[]; total: number }>(cacheKey);
         if (cached) {
           return cached;
         }
 
-        const pageSize = Math.max(1, Math.min(100, limit));
+        const pageSize = Math.max(1, Math.min(100, safeLimit));
         const alchemyUrl = this.alchemyUrl;
 
-        const maxCount = Math.max(1, Math.min(1000, limit + offset));
+        const maxCount = Math.max(1, Math.min(1000, safeLimit + safeOffset));
 
         const fetchTransfers = async (direction: "to" | "from") => {
           const body = {
@@ -144,7 +174,7 @@ export class EthereumService {
           ).values()
         );
 
-        const sliced = deduped.slice(offset, offset + pageSize);
+        const sliced = deduped.slice(safeOffset, safeOffset + pageSize);
 
         const transactions: Transaction[] = sliced.map((tx) => {
           const rawValue = tx.rawContract?.value ?? null;
@@ -152,16 +182,16 @@ export class EthereumService {
           let normalizedValue: string = `${tx.value ?? "0"}`;
 
           if (rawValue && rawDecimal) {
-            const decimal = rawDecimal.startsWith("0x")
-              ? Number.parseInt(rawDecimal, 16)
-              : Number.parseInt(rawDecimal, 10);
-            const valueBig = BigInt(rawValue);
-            const divisor = BigInt(10) ** BigInt(decimal);
-            const whole = valueBig / divisor;
-            const fraction = valueBig % divisor;
-            normalizedValue = fraction === 0n
-              ? `${whole}`
-              : `${whole}.${fraction.toString().padStart(decimal, "0")}`;
+            const rawDecimalString = typeof (rawDecimal as unknown) === "bigint"
+              ? String(rawDecimal)
+              : String(rawDecimal as unknown);
+            const decimal = rawDecimalString.startsWith("0x")
+              ? Number.parseInt(rawDecimalString, 16)
+              : Number.parseInt(rawDecimalString, 10);
+            const valueBig = typeof (rawValue as unknown) === "bigint"
+              ? (rawValue as unknown as bigint)
+              : BigInt(rawValue as string);
+            normalizedValue = formatUnits(valueBig, decimal);
           }
 
           return {
@@ -169,10 +199,18 @@ export class EthereumService {
             from: tx.from,
             to: tx.to ?? null,
             value: normalizedValue,
-            timestamp: tx.metadata?.blockTimestamp
-              ? Math.floor(new Date(tx.metadata.blockTimestamp).getTime() / 1000)
-              : 0,
-            blockNumber: parseInt(tx.blockNum, 16),
+            timestamp: (() => {
+              const rawTimestamp = tx.metadata?.blockTimestamp ?? null;
+              if (rawTimestamp === null || rawTimestamp === undefined) return 0;
+              if (typeof rawTimestamp === "string") {
+                const millis = Date.parse(rawTimestamp);
+                return Number.isNaN(millis) ? 0 : Math.floor(millis / 1000);
+              }
+              const numeric = this.toNumber(rawTimestamp);
+              if (numeric === null) return 0;
+              return numeric > 1e12 ? Math.floor(numeric / 1000) : Math.floor(numeric);
+            })(),
+            blockNumber: this.toHexNumber(tx.blockNum) ?? 0,
             fee: "0",
             status: "success"
           };
