@@ -27,6 +27,17 @@ const pluginStatus = new Map<string,PluginStatusType>();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginsPath = resolve(__dirname, '..', 'plugins.json');
 
+function resolveSecretValue(value: unknown) {
+  if (typeof value !== 'string') return value;
+  const match = value.match(/^\$\{(.+)\}$/);
+  if (match) {
+    const envKey = match[1];
+    const envValue = envKey ? process.env[envKey] : undefined;
+    return envValue ?? '';
+  }
+  return value;
+}
+
 // Load plugins from JSON
 async function loadPluginConfig() {
   try {
@@ -112,7 +123,7 @@ async function reloadPlugins() {
     
     // Collect secrets
     for (const [key, value] of Object.entries((config as any).secrets || {})) {
-      secrets[`${id.toUpperCase()}_${key}`] = value;
+      secrets[`${id.toUpperCase()}_${key}`] = resolveSecretValue(value);
     }
 
     pluginStatus.set(id, { status: 'loaded', checkedAt: Date.now() });

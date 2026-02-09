@@ -21,11 +21,27 @@ export default createPlugin({
   }),
   
   initialize: (config) => Effect.gen(function* () {
-    const alchemyUrl = config.variables.alchemyUrl
-      ?? `https://eth-mainnet.g.alchemy.com/v2/${config.secrets.apiKey}`;
+    const rawAlchemyUrl = config.variables.alchemyUrl?.trim();
+    const apiKey = config.secrets.apiKey;
+    let alchemyUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
 
+    if (rawAlchemyUrl) {
+      if (rawAlchemyUrl.includes("${API_KEY}")) {
+        alchemyUrl = rawAlchemyUrl.replace("${API_KEY}", apiKey);
+      } else if (rawAlchemyUrl.includes("{API_KEY}")) {
+        alchemyUrl = rawAlchemyUrl.replace("{API_KEY}", apiKey);
+      } else if (rawAlchemyUrl.endsWith("/")) {
+        alchemyUrl = `${rawAlchemyUrl}${apiKey}`;
+      } else if (rawAlchemyUrl.endsWith("/v2")) {
+        alchemyUrl = `${rawAlchemyUrl}/${apiKey}`;
+      } else if (rawAlchemyUrl.includes("/v2/")) {
+        alchemyUrl = rawAlchemyUrl;
+      } else {
+        alchemyUrl = `${rawAlchemyUrl}/v2/${apiKey}`;
+      }
+    }
     const service = new EthereumService(
-      config.secrets.apiKey,
+      apiKey,
       config.variables.chainId ?? 1,
       config.variables.name ?? "Ethereum Mainnet",
       config.variables.symbol ?? "ETH",
